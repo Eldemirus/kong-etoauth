@@ -46,8 +46,8 @@ function _M.run(conf)
     -- local access_token = ngx.var.cookie_token
     local access_token = ngx.req.get_headers()["Authorization"]
     if access_token ~= nil then
-        access_token = string.match( access_token, 'Bearer (%w+)')
         ngx.log(ngx.WARN, "TOKEN: " .. access_token)
+        access_token = string.match( access_token, 'Bearer (%w+)')
     else
         ngx.log(ngx.WARN, "NO TOKEN")
     end    
@@ -74,10 +74,16 @@ function _M.run(conf)
             return
         end
 
+        ngx.log(ngx.WARN, "cache_token: " .. cache_token)
         local json = cjson.decode(cache_token)
+        if ngx.time() - json.time > 30 then
+            singletons.cache:invalidate('token.' .. access_token)
+            ngx.log(ngx.WARN, "token is to old")
+            local cache_token, err = singletons.cache:get('token.' .. access_token, nil, load_token, access_token)
+        end
 
         for i, key in ipairs(conf.user_keys) do
-            ngx.header["X-Oauth-".. key] = json[key]
+            ngx.header["X-Oauth-".. key] = json.info[key]
         end
         ngx.header["X-Oauth-Token"] = access_token
 
@@ -106,11 +112,14 @@ end
 
 function load_token(token)
     local res, err = check_token(token)
+    local rescache = {}
 
     if err or res.status ~= 200 then
         return nil
     else
-        return res.body
+        rescache['time'] = ngx.time()
+        rescache['info'] = cjson.decode(res.body)
+        return cjson.encode(rescache)
     end
 end
 
