@@ -83,9 +83,9 @@ function _M.run(conf)
         end
 
         for i, key in ipairs(conf.user_keys) do
-            ngx.header["X-Oauth-".. key] = json.info[key]
+            ngx.req.set_header("X-Oauth-".. key, json['info'][key])
         end
-        ngx.header["X-Oauth-Token"] = access_token
+        ngx.req.set_header("X-Oauth-Token",access_token)
 
     else
         ngx.status = 500
