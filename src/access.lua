@@ -42,7 +42,7 @@ function _M.run(conf)
         end
 
     end
-    
+
     -- local access_token = ngx.var.cookie_token
     local access_token = ngx.req.get_headers()["Authorization"]
     if access_token ~= nil then
@@ -50,18 +50,18 @@ function _M.run(conf)
         access_token = string.match( access_token, 'Bearer (%w+)')
     else
         ngx.log(ngx.WARN, "NO TOKEN")
-    end    
+    end
 
     if access_token == nil then
         ngx.status = 401
-        ngx.say("not authorized")
+        ngx.say(get_json_error("not authorized"))
         ngx.exit(ngx.HTTP_OK)
         return
-    end    
+    end
 
     ngx.log(ngx.WARN, "TOKEN: " .. access_token)
     ngx.log(ngx.WARN, "load_token: " .. check_token(access_token).body)
-    
+
     local cache_token, err = singletons.cache:get('token.' .. access_token, nil, load_token, access_token)
 
     -- check token
@@ -69,7 +69,7 @@ function _M.run(conf)
         -- redirect to auth if user result is invalid not 200
         if cache_token == nil then
             ngx.status = 401
-            ngx.say("Error token valiation")
+            ngx.say(get_json_error("Error token valiation"))
             ngx.exit(ngx.HTTP_OK)
             return
         end
@@ -89,7 +89,7 @@ function _M.run(conf)
 
     else
         ngx.status = 500
-        ngx.say(err)
+        ngx.say(get_json_error(err))
         ngx.exit(ngx.HTTP_OK)
         return
     end
@@ -123,5 +123,10 @@ function load_token(token)
     end
 end
 
+function get_json_error(texterr)
+    local res = {}
+    res['status'] = texterr
+    return cjson.encode(res)
+end
 
 return _M
