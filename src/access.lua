@@ -17,7 +17,7 @@ local _M = {}
 local cjson = require "cjson.safe"
 local pl_stringx = require "pl.stringx"
 local http = require "resty.http"
-local crypto = require "crypto"
+-- local crypto = require "crypto"
 local singletons = require "kong.singletons"
 local xconf
 -- local cache = singletons.cache
